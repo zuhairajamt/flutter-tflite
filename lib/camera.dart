@@ -1,6 +1,7 @@
 // @dart = 2.9
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
 import 'package:tflite/tflite.dart';
 import 'dart:math' as math;
 
@@ -26,19 +27,34 @@ class _CameraState extends State<Camera> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
 
     if (widget.cameras == null || widget.cameras.length < 1) {
       print('No camera is found');
     } else {
       controller = new CameraController(
         widget.cameras[0],
-        ResolutionPreset.high,
+        ResolutionPreset.low,
       );
       controller.initialize().then((_) {
         if (!mounted) {
           return;
         }
         setState(() {});
+
+        void setRecognitions(
+            List<dynamic> recognitions, int height, int width) {
+          List<dynamic> filteredRecognitions =
+              recognitions.where((recognition) {
+            return recognition["detectedClass"] == "person" ||
+                recognition["detectedClass"] == "human";
+          }).toList();
+
+          widget.setRecognitions(filteredRecognitions, height, width);
+        }
 
         controller.startImageStream((CameraImage img) {
           if (!isDetecting) {
@@ -51,8 +67,8 @@ class _CameraState extends State<Camera> {
                 bytesList: img.planes.map((plane) {
                   return plane.bytes;
                 }).toList(),
-                imageHeight: img.height,
-                imageWidth: img.width,
+                imageHeight: img.width,
+                imageWidth: img.height,
                 numResults: 2,
               ).then((recognitions) {
                 int endTime = new DateTime.now().millisecondsSinceEpoch;
@@ -78,7 +94,8 @@ class _CameraState extends State<Camera> {
 
                 isDetecting = false;
               });
-            } else {
+            } 
+            else {
               Tflite.detectObjectOnFrame(
                 bytesList: img.planes.map((plane) {
                   return plane.bytes;
@@ -88,13 +105,13 @@ class _CameraState extends State<Camera> {
                 imageWidth: img.width,
                 imageMean: widget.model == yolo ? 0 : 127.5,
                 imageStd: widget.model == yolo ? 255.0 : 127.5,
-                numResultsPerClass: 1,
+                numResultsPerClass: 10,
                 threshold: widget.model == yolo ? 0.2 : 0.4,
               ).then((recognitions) {
                 int endTime = new DateTime.now().millisecondsSinceEpoch;
                 print("Detection took ${endTime - startTime}");
 
-                widget.setRecognitions(recognitions, img.height, img.width);
+                setRecognitions(recognitions, img.height, img.width);
 
                 isDetecting = false;
               });
@@ -107,8 +124,8 @@ class _CameraState extends State<Camera> {
 
   @override
   void dispose() {
-    controller?.dispose();
     super.dispose();
+    SystemChrome.setPreferredOrientations([]);
   }
 
   @override
@@ -118,19 +135,19 @@ class _CameraState extends State<Camera> {
     }
 
     var tmp = MediaQuery.of(context).size;
-    var screenH = math.max(tmp.height, tmp.width);
-    var screenW = math.min(tmp.height, tmp.width);
+    var screenW = math.max(tmp.width, tmp.height);
+    var screenH = math.min(tmp.width, tmp.height);
     tmp = controller.value.previewSize;
-    var previewH = math.max(tmp.height, tmp.width);
-    var previewW = math.min(tmp.height, tmp.width);
-    var screenRatio = screenH / screenW;
-    var previewRatio = previewH / previewW;
+    var previewW = math.max(tmp.width, tmp.height);
+    var previewH = math.min(tmp.width, tmp.height);
+    var screenRatio = screenW / screenH;
+    var previewRatio = previewW / previewH;
 
     return OverflowBox(
-      maxHeight:
-          screenRatio > previewRatio ? screenH : screenW / previewW * previewH,
       maxWidth:
-          screenRatio > previewRatio ? screenH / previewH * previewW : screenW,
+          screenRatio > previewRatio ? screenW : screenH / previewH * previewW,
+      maxHeight:
+          screenRatio > previewRatio ? screenW / previewW * previewH : screenH,
       child: CameraPreview(controller),
     );
   }

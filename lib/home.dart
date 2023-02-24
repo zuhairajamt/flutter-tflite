@@ -97,6 +97,10 @@ class _HomePageState extends State<HomePage> {
                     child: const Text(posenet),
                     onPressed: () => onSelect(posenet),
                   ),
+                  // ElevatedButton(
+                  //   child: const Text(dewe),
+                  //   onPressed: () => onSelect(dewe),
+                  // ),
                 ],
               ),
             )
@@ -109,8 +113,8 @@ class _HomePageState extends State<HomePage> {
                 ),
                 BndBox(
                     _recognitions == null ? [] : _recognitions,
-                    math.max(_imageHeight, _imageWidth),
                     math.min(_imageHeight, _imageWidth),
+                    math.max(_imageHeight, _imageWidth),
                     screen.height,
                     screen.width,
                     _model),

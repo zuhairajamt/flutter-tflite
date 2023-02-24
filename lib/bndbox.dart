@@ -24,15 +24,7 @@ class BndBox extends StatelessWidget {
         var scaleW, scaleH, x, y, w, h;
 
         if (screenH / screenW > previewH / previewW) {
-          scaleW = screenH / previewH * previewW;
-          scaleH = screenH;
-          var difW = (scaleW - screenW) / scaleW;
-          x = (_x - difW / 2) * scaleW;
-          w = _w * scaleW;
-          if (_x < difW / 2) w -= (difW / 2 - _x) * scaleW;
-          y = _y * scaleH;
-          h = _h * scaleH;
-        } else {
+          // Use screenW as the base for scaling factor
           scaleH = screenW / previewW * previewH;
           scaleW = screenW;
           var difH = (scaleH - screenH) / scaleH;
@@ -41,6 +33,16 @@ class BndBox extends StatelessWidget {
           y = (_y - difH / 2) * scaleH;
           h = _h * scaleH;
           if (_y < difH / 2) h -= (difH / 2 - _y) * scaleH;
+        } else {
+          //scaleW = screenH / previewH * previewW;
+          scaleH = screenW / previewW * previewH;
+          scaleW = screenW;
+          var difW = (scaleW - screenW) / scaleW;
+          x = (_x - difW / 2) * scaleW;
+          w = _w * scaleW;
+          if (_x < difW / 2) w -= (difW / 2 - _x) * scaleW;
+          y = _y * scaleH;
+          h = _h * scaleH;
         }
 
         return Positioned(
@@ -137,7 +139,9 @@ class BndBox extends StatelessWidget {
     return Stack(
       children: model == mobilenet
           ? _renderStrings()
-          : model == posenet ? _renderKeypoints() : _renderBoxes(),
+          : model == posenet
+              ? _renderKeypoints()
+              : _renderBoxes(),
     );
   }
 }
